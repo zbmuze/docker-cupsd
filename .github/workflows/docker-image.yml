@@ -11,20 +11,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Build the Docker image
-        run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
-      # 若需要推送镜像到仓库，补充以下步骤（需先配置 Secrets）
+
+      # 登录到 Docker Hub（仅在推送时执行）
       - name: Login to Docker Hub
         if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # 构建并推送镜像
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
           context: .
           push: ${{ github.event_name != 'pull_request' }}
           tags: |
-            muze862/cupsd:latest  # 这里仅保留标签，注释放在标签行末尾（不影响解析）
+            muze862/cupsd:latest  # 注意：注释必须单独占一行或放在标签行末尾且不影响解析
             muze862/cupsd:${{ github.sha }}
