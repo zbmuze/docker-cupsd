@@ -1,56 +1,48 @@
-FROM debian:bookworm-slim
-LABEL maintainer="Joe Block <jpb@unixorn.net>"
-LABEL description="Cupsd on top of debian-slim"
+# 基于 x86 架构的 OpenWRT 基础镜像（以 64 位为例）
+FROM openwrtorg/rootfs:x86_64
 
-# Install Packages (basic tools, cups, fonts, HP drivers, laundry list drivers)
-RUN apt-get update \
-&& apt-get install -y --no-install-recommends apt-utils ca-certificates \
-&& update-ca-certificates \
-&& apt autoremove -y \
-&& apt-get install -y \
-  cups \
-  cups-bsd \
-  cups-client \
-  cups-filters \
-  gutenprint-locales \
-  magicfilter \
-  openprinting-ppds \
-  printer-driver-all \
-  printer-driver-cups-pdf \
-  printer-driver-escpr \
-  printer-driver-gutenprint \
-&& apt-get install -y --no-install-recommends \
-  binutils \
-  psutils \
-  smbclient \
-  sudo \
-  whois \
-&& apt-get clean \
-&& rm -rf /var/lib/apt/lists/* /tmp/*
+# 安装依赖（x86 架构支持更完整的 CUPS 组件）
+RUN opkg update && \
+    opkg install \
+      cups \
+      cups-bsd \
+      cups-filters \
+      cups-libs \
+      printer-driver-gutenprint \
+      printer-driver-cups-pdf \
+      sudo \
+      dbus \
+      usbutils \
+      curl \
+      # x86 额外支持的网络打印组件
+      samba36-client \
+      avahi-daemon \
+    && rm -rf /var/cache/opkg/*
 
-# Add user and disable sudo password checking
+# 创建用户（适配 OpenWRT 的 ash shell）
 RUN useradd \
-  --groups=sudo,lp,lpadmin \
-  --create-home \
-  --home-dir=/home/print \
-  --shell=/bin/bash \
-  --password=$(mkpasswd print) \
-  print \
-&& sed -i '/%sudo[[:space:]]/ s/ALL[[:space:]]*$/NOPASSWD:ALL/' /etc/sudoers
+    --groups=sudo,lp,lpadmin \
+    --create-home \
+    --home-dir=/home/print \
+    --shell=/bin/ash \
+    print \
+  && echo "print:print" | chpasswd \
+  && echo "%sudo ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
-# Fix Bad Request error by adding ServerAlias * to cupsd.conf
-RUN cp /etc/cups/cupsd.conf /etc/cups/fixit && \
-  sed 's/Port 631/Port 631\nServerAlias \*/' < /etc/cups/fixit > /etc/cups/cupsd.conf && \
-  rm -f /etc/cups/fixit
+# 配置 CUPS（启用网络发现，适配 x86 网络性能）
+RUN sed -i '/^Port 631/a ServerAlias *' /etc/cups/cupsd.conf && \
+    # 允许 Avahi 服务发现（x86 支持更好）
+    sed -i 's/^#BrowseLocalProtocols/BrowseLocalProtocols/' /etc/cups/cupsd.conf && \
+    sed -i '0,/^</s//DefaultEncryption IfRequested\n&/' /etc/cups/cupsd.conf && \
+    # 启动 CUPS 并应用配置
+    /usr/sbin/cupsd && \
+    while [ ! -f /var/run/cups/cupsd.pid ]; do sleep 1; done && \
+    cupsctl --remote-admin --remote-any --share-printers --enable-browsing && \
+    kill $(cat /var/run/cups/cupsd.pid)
 
-# Configure the services to be reachable
-RUN /usr/sbin/cupsd \
-  && while [ ! -f /var/run/cups/cupsd.pid ]; do sleep 1; done \
-  && cupsctl --remote-admin --remote-any --share-printers \
-  && kill $(cat /var/run/cups/cupsd.pid)
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=5s \
+  CMD curl -f http://localhost:631/ || exit 1
 
-# Patch the default configuration file to only enable encryption if requested
-RUN sed -e '0,/^</s//DefaultEncryption IfRequested\n&/' -i /etc/cups/cupsd.conf
-
-# Default shell
-CMD ["/usr/sbin/cupsd", "-f"]
+# 启动服务（同时启动 Avahi 用于网络发现）
+CMD ["/bin/sh", "-c", "avahi-daemon --daemonize && /usr/sbin/cupsd -f"]
