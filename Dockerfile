@@ -1,41 +1,58 @@
-# 基础镜像
 FROM debian:bookworm-slim
+LABEL maintainer="Joe Block <jpb@unixorn.net>"
+LABEL description="Cupsd on top of debian-slim"
 
-# 避免交互式配置
-ENV DEBIAN_FRONTEND=noninteractive
+# Install Packages (basic tools, cups, fonts, HP drivers, laundry list drivers)
+RUN apt-get update \
+&& apt-get install -y --no-install-recommends apt-utils ca-certificates \
+&& update-ca-certificates \
+&& apt autoremove -y \
+&& apt-get install -y \
+  cups \
+  cups-bsd \
+  cups-client \
+  cups-filters \
+  foomatic-db \
+  gsfonts \
+  gutenprint-locales \
+  magicfilter \
+  openprinting-ppds \
+  printer-driver-all \
+  printer-driver-cups-pdf \
+  printer-driver-escpr \
+  printer-driver-gutenprint \
+&& apt-get install -y --no-install-recommends \
+  binutils \
+  psutils \
+  smbclient \
+  sudo \
+  whois \
+&& apt-get clean \
+&& rm -rf /var/lib/apt/lists/* /tmp/*
 
-# 添加构建参数而非直接使用环境变量存储敏感信息
-ARG CUPS_ADMIN_PASSWORD=print
-ENV CUPS_ADMIN_PASSWORD=$CUPS_ADMIN_PASSWORD
+# Add user and disable sudo password checking
+RUN useradd \
+  --groups=sudo,lp,lpadmin \
+  --create-home \
+  --home-dir=/home/print \
+  --shell=/bin/bash \
+  --password=$(mkpasswd print) \
+  print \
+&& sed -i '/%sudo[[:space:]]/ s/ALL[[:space:]]*$/NOPASSWD:ALL/' /etc/sudoers
 
-# 安装所需软件包
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    cups \
-    cups-bsd \
-    cups-filters \
-    printer-driver-all \
-    printer-driver-gutenprint \
-    printer-driver-hpcups \
-    hpijs-ppds \
-    hplip \
-    && rm -rf /var/lib/apt/lists/*
+# Fix Bad Request error by adding ServerAlias * to cupsd.conf
+RUN cp /etc/cups/cupsd.conf /etc/cups/fixit && \
+  sed 's/Port 631/Port 631\nServerAlias \*/' < /etc/cups/fixit > /etc/cups/cupsd.conf && \
+  rm -f /etc/cups/fixit
 
-# 配置 CUPS 允许远程访问
-RUN sed -i 's/Listen localhost:631/Listen 0.0.0.0:631/' /etc/cups/cupsd.conf && \
-    sed -i '/<Location \/>/a \  Allow All' /etc/cups/cupsd.conf && \
-    sed -i '/<Location \/admin>/a \  Allow All' /etc/cups/cupsd.conf && \
-    sed -i '/<Location \/admin\/conf>/a \  Allow All' /etc/cups/cupsd.conf && \
-    echo "ServerAlias *" >> /etc/cups/cupsd.conf && \
-    useradd -m print && \
-    echo "print:$CUPS_ADMIN_PASSWORD" | chpasswd && \
-    usermod -aG lpadmin print
+# Configure the services to be reachable
+RUN /usr/sbin/cupsd \
+  && while [ ! -f /var/run/cups/cupsd.pid ]; do sleep 1; done \
+  && cupsctl --remote-admin --remote-any --share-printers \
+  && kill $(cat /var/run/cups/cupsd.pid)
 
-# 添加启动脚本
-COPY start-cups.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/start-cups.sh
+# Patch the default configuration file to only enable encryption if requested
+RUN sed -e '0,/^</s//DefaultEncryption IfRequested\n&/' -i /etc/cups/cupsd.conf
 
-# 暴露 CUPS 端口
-EXPOSE 631
-
-# 启动服务
-CMD ["/usr/local/bin/start-cups.sh"]
+# Default shell
+CMD ["/usr/sbin/cupsd", "-f"]
