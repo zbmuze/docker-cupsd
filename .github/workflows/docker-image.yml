@@ -3,7 +3,7 @@ name: Docker Image CI
 on:
   push:
     branches: [ "main" ]
-    tags: [ "v*" ]  # 标签触发（如 v1.0.0）
+    tags: [ "v*" ]
   pull_request:
     branches: [ "main" ]
 
@@ -13,22 +13,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # 登录到 Docker Hub（仅在推送时执行，PR 不执行）
       - name: Login to Docker Hub
         if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}  # 替换为你的 Secret 名称
-          password: ${{ secrets.DOCKERHUB_TOKEN }}     # 替换为你的 Secret 名称
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # 构建并推送镜像
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
           context: .
-          push: ${{ github.event_name != 'pull_request' }}  # PR 时仅构建不推送
+          push: ${{ github.event_name != 'pull_request' }}
           tags: |
-            muze862/cupsd:latest  # 替换为你的 Docker Hub 用户名/仓库名
-            muze862/cupsd:${{ github.sha }}  # 用 commit SHA 作为标签
-            # 若触发事件是标签，可添加标签版本（如 v1.0.0）
+            muze862/cupsd:latest  # 移除标签后的注释，仅保留有效标签
+            muze862/cupsd:${{ github.sha }}
             ${{ startsWith(github.ref, 'refs/tags/') && format('muze862/cupsd:{0}', github.ref_name) || '' }}
