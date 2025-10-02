@@ -12,7 +12,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # 登录 Docker Hub（仅在推送时执行）
       - name: Login to Docker Hub
         if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
@@ -20,14 +19,14 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # 构建并推送镜像（移除所有标签行的注释）
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
           context: .
           push: ${{ github.event_name != 'pull_request' }}
+          # 标签列表（注释需写在标签列表外或用 YAML 注释格式）
           tags: |
             # 标签说明：最新版本
-            muze862/cupsd:latest
+            your-docker-username/cupsd:latest
             # 标签说明：基于 commit SHA 的唯一版本
-            muze862/cupsd:${{ github.sha }}
+            your-docker-username/cupsd:${{ github.sha }}
