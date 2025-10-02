@@ -12,35 +12,13 @@ RUN apt-get update \
   cups-bsd \
   cups-client \
   cups-filters \
-  foomatic-db \
-  gsfonts \
   gutenprint-locales \
-  hp-ppd \
-  hpijs-ppds \
-  hplip \
   magicfilter \
   openprinting-ppds \
   printer-driver-all \
-  printer-driver-brlaser \
-  printer-driver-c2050 \
-  printer-driver-c2esp \
-  printer-driver-cjet \
   printer-driver-cups-pdf \
-  printer-driver-dymo \
   printer-driver-escpr \
-  printer-driver-foo2zjs \
-  printer-driver-fujixerox \
   printer-driver-gutenprint \
-  printer-driver-hpcups \
-  printer-driver-hpijs \
-  printer-driver-m2300w \
-  printer-driver-min12xxw \
-  printer-driver-pnm2ppa \
-  printer-driver-postscript-hp \
-  printer-driver-ptouch \
-  printer-driver-pxljr \
-  printer-driver-sag-gdi \
-  printer-driver-splix \
 && apt-get install -y --no-install-recommends \
   binutils \
   psutils \
