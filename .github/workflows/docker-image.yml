@@ -3,7 +3,6 @@ name: Docker Image CI
 on:
   push:
     branches: [ "main" ]
-    tags: [ "v*" ]
   pull_request:
     branches: [ "main" ]
 
@@ -12,20 +11,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
+      - name: Build the Docker image
+        run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
+      # 若需要推送镜像到仓库，补充以下步骤（需先配置 Secrets）
       - name: Login to Docker Hub
         if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
           context: .
           push: ${{ github.event_name != 'pull_request' }}
           tags: |
-            muze862/cupsd:latest  # 移除标签后的注释，仅保留有效标签
+            muze862/cupsd:latest  # 这里仅保留标签，注释放在标签行末尾（不影响解析）
             muze862/cupsd:${{ github.sha }}
-            ${{ startsWith(github.ref, 'refs/tags/') && format('muze862/cupsd:{0}', github.ref_name) || '' }}
