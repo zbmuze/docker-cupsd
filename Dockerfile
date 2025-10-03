@@ -1,3 +1,7 @@
+FROM debian:bookworm-slim
+LABEL maintainer="muze <zhmuze@gmail.com>"
+LABEL description="Cupsd on debian-slim, only for Epson L210/L360 (Gutenprint)"
+
 # 仅安装 L210 必需组件：CUPS 核心 + Gutenprint 驱动 + 基础工具
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
