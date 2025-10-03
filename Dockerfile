@@ -1,36 +1,23 @@
 FROM debian:bookworm-slim
 LABEL maintainer="Joe Block <jpb@unixorn.net>"
-LABEL description="Cupsd on top of debian-slim"
+LABEL description="Cupsd on top of debian-slim, optimized for Epson L360"
 
-# Install Packages (basic tools, cups, fonts, HP drivers, laundry list drivers)
+# 精简安装包，仅保留 CUPS 核心和爱普生 L360 所需驱动
+# 移除了 PDF、HP、Gutenprint 等非必需驱动和工具
 RUN apt-get update \
-&& apt-get install -y --no-install-recommends apt-utils ca-certificates \
-&& update-ca-certificates \
-&& apt autoremove -y \
-&& apt-get install -y \
-  cups \
-  cups-bsd \
-  cups-client \
-  cups-filters \
-  foomatic-db \
-  gsfonts \
-  gutenprint-locales \
-  magicfilter \
-  openprinting-ppds \
-  printer-driver-all \
-  printer-driver-cups-pdf \
-  printer-driver-escpr \
-  printer-driver-gutenprint \
-&& apt-get install -y --no-install-recommends \
-  binutils \
-  psutils \
-  smbclient \
-  sudo \
-  whois \
-&& apt-get clean \
-&& rm -rf /var/lib/apt/lists/* /tmp/*
+  && apt-get install -y --no-install-recommends \
+    cups \
+    cups-bsd \
+    cups-client \
+    cups-filters \
+    foomatic-db \
+    gsfonts \
+    printer-driver-escpr \
+    openprinting-ppds \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/* /tmp/*
 
-# Add user and disable sudo password checking
+# 添加用户并配置 sudo
 RUN useradd \
   --groups=sudo,lp,lpadmin \
   --create-home \
@@ -40,19 +27,19 @@ RUN useradd \
   print \
 && sed -i '/%sudo[[:space:]]/ s/ALL[[:space:]]*$/NOPASSWD:ALL/' /etc/sudoers
 
-# Fix Bad Request error by adding ServerAlias * to cupsd.conf
+# 修复 Bad Request 错误
 RUN cp /etc/cups/cupsd.conf /etc/cups/fixit && \
   sed 's/Port 631/Port 631\nServerAlias \*/' < /etc/cups/fixit > /etc/cups/cupsd.conf && \
   rm -f /etc/cups/fixit
 
-# Configure the services to be reachable
+# 配置服务可远程访问
 RUN /usr/sbin/cupsd \
   && while [ ! -f /var/run/cups/cupsd.pid ]; do sleep 1; done \
   && cupsctl --remote-admin --remote-any --share-printers \
   && kill $(cat /var/run/cups/cupsd.pid)
 
-# Patch the default configuration file to only enable encryption if requested
+# 仅在请求时启用加密
 RUN sed -e '0,/^</s//DefaultEncryption IfRequested\n&/' -i /etc/cups/cupsd.conf
 
-# Default shell
+# 启动命令
 CMD ["/usr/sbin/cupsd", "-f"]
