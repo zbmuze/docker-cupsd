@@ -20,31 +20,21 @@ jobs:
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          username: ${{ secrets.DOCKERHUB_USERNAME}}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Extract metadata (tags and labels)
         id: meta
-        uses: docker/metadata-action@v5
+        # --- 核心修改：将 v5 改为明确的 v5.5.1 ---
+        uses: docker/metadata-action@v5.5.1
         with:
           images: ${{ secrets.DOCKERHUB_USERNAME }}/mzcupsd
-          # --- 核心修改：优化标签策略以保留历史版本 ---
           tags: |
-            # 1. 为 Git 标签生成精确版本和语义化版本标签
-            #    例如，推送 v1.2.3 时，生成 v1.2.3, 1.2.3, 1.2, 1
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
-            
-            # 2. 为分支推送生成分支名标签 (例如 main)
             type=ref,event=branch
-            
-            # 3. 为每次构建生成唯一的 Git 提交哈希标签 (例如 sha-abc123)
-            #    这是保留所有历史版本的关键
             type=sha,format=short
-            
-            # 4. 仅在推送 Git 标签时，才将镜像同时标记为 'latest'
-            #    这样 'latest' 就始终指向最新的稳定发布版
             type=raw,value=latest,enable={{is_tag}}
 
       - name: Build and push
@@ -53,7 +43,6 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          # 使用 metadata-action 生成的所有标签
           tags: ${{ steps.meta.outputs.tags }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
