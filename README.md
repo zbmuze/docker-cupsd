@@ -21,11 +21,11 @@ Admin user & passwords default to **print** / **print**
 仅为自己使用爱普生L360打印机方便
 Start `cupsd` with:
 ```sh
-docker run -d --name mzcupsd-printer --restart unless-stopped -p 631:631 --privileged -v /var/run/dbus:/var/run/dbus -v /dev/bus/usb:/dev/bus/usb -v "$(pwd)/printers.conf:/etc/cups/printers.conf" muze862/mzcupsd
+docker run -d --name mzcupsd-printer --restart unless-stopped -p 631:631 --privileged -v /var/run/dbus:/var/run/dbus -v /dev/bus/usb:/dev/bus/usb -v "$(pwd)/printers.conf:/etc/cups/printers.conf" muze862/mzcupsd:latest
 ```
 打印机和扫描仪  
 ```sh
-docker run -d --name mzcupsd-printer-scan --restart unless-stopped -p 631:631 -p 6566:6566 --privileged -v /var/run/dbus:/var/run/dbus -v /dev/bus/usb:/dev/bus/usb -v "$(pwd)/printers.conf:/etc/cups/printers.conf" -v "$(pwd)/sane:/etc/sane.d" muze862/mzcupsd
+docker run -d --name mzcupsd-printer-scan --restart unless-stopped -p 631:631 -p 6566:6566 --privileged -v /var/run/dbus:/var/run/dbus -v /dev/bus/usb:/dev/bus/usb -v "$(pwd)/printers.conf:/etc/cups/printers.conf" -v "$(pwd)/sane:/etc/sane.d" muze862/mzcupsd:1
 ```
 Mounting `printers.conf` into the container keeps you from losing your printer configuration when you upgrade the container later.
 
