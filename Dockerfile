@@ -40,7 +40,7 @@ RUN echo "epson2" > /etc/sane.d/dll.d/epson2.conf
 # 创建用户并加入 lpadmin 和 scanner 组
 RUN useradd -m -s /bin/bash -G lpadmin,scanner print \
     && echo "print:print" | chpasswd
-
+RUN apt-get update && apt-get install -y sane-airscan avahi-daemon
 # 配置 CUPS 允许远程访问和管理
 RUN sed -i 's/Listen localhost:631/Listen 0.0.0.0:631/' /etc/cups/cupsd.conf \
     && sed -i '/<Location \/>/a \  Allow All' /etc/cups/cupsd.conf \
