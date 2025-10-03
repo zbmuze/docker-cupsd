@@ -1,26 +1,31 @@
 FROM debian:bookworm-slim
 LABEL maintainer="muze <zhmuze@gmail.com>"
-LABEL description="Cupsd on debian-slim, only for Epson L210/L360 (Gutenprint)"
+LABEL description="Cupsd on debian-slim, only for Epson L210/L360 (Official Driver)"
 # 设置环境变量以避免交互式配置
 ENV DEBIAN_FRONTEND=noninteractive
 
-# --- 核心修改：仅安装 L210 必需的软件包 ---
-# 移除了所有其他品牌的驱动和非必需工具
+# --- 核心修改：安装 CUPS 和官方 Epson 驱动 ---
 RUN apt-get update && apt-get install -y --no-install-recommends \
     # CUPS 核心服务和基础组件
     cups \
     cups-bsd \
     cups-client \
     cups-filters \
-    # L210 专用驱动
-    printer-driver-gutenprint \
     # 基础字体支持
     gsfonts \
-    # PPD 文件数据库，Gutenprint 依赖它来识别打印机型号
+    # PPD 文件数据库
     openprinting-ppds \
     # 创建用户和配置 sudo 所需的工具
     sudo \
     whois \
+    # --- 新增部分：下载和安装驱动所需的工具 ---
+    wget \
+    dpkg \
+  # --- 下载并安装官方 Epson 驱动 ---
+  && wget -O /tmp/epson-driver.deb https://eposs.epson.com.cn/EPSON/assets/resource/Download/Service/driver/Inkjet/L130/sign_epson-inkjet-printer-201401w_1_0_0_amd64.deb \
+  && dpkg -i /tmp/epson-driver.deb || true \
+  && apt-get -f install -y \
+  # --- 清理 ---
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/* /tmp/*
 
