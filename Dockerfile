@@ -1,7 +1,7 @@
 FROM debian:bookworm-slim
 
 LABEL maintainer="muze <zhmuze@gmail.com>"
-LABEL description="Cupsd on debian-slim, only for Epson L210 (Gutenprint v5.3.4)"
+LABEL description="Cupsd on debian-slim, only for Epson L210/L360 (Gutenprint v5.3.4)"
 
 # 设置环境变量以避免交互式配置
 ENV DEBIAN_FRONTEND=noninteractive
@@ -25,9 +25,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/* /tmp/*
 
-# 清理其他不必要的打印机驱动（可选，进一步确保只保留目标驱动）
-# 这里以清理 HP 驱动为例，可根据实际情况调整
-RUN apt-get remove -y --purge printer-driver-hp* \
+# 清理其他不必要的打印机驱动（改进版，先检查再卸载）
+RUN if dpkg -l | grep -q "printer-driver-hp"; then \
+        apt-get remove -y --purge printer-driver-hp*; \
+    fi \
     && apt-get autoremove -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/*
