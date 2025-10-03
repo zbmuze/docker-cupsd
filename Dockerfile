@@ -2,8 +2,7 @@ FROM debian:bookworm-slim
 LABEL maintainer="Joe Block <jpb@unixorn.net>"
 LABEL description="Cupsd on top of debian-slim, optimized for Epson L360"
 
-# 精简安装包，仅保留 CUPS 核心和爱普生 L360 所需驱动
-# 移除了 PDF、HP、Gutenprint 等非必需驱动和工具
+# 精简安装包，并重新加入 'whois' 包以提供 mkpasswd 命令
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
     cups \
@@ -14,10 +13,11 @@ RUN apt-get update \
     gsfonts \
     printer-driver-escpr \
     openprinting-ppds \
+    whois \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/* /tmp/*
 
-# 添加用户并配置 sudo
+# 添加用户并配置 sudo (现在 mkpasswd 可用，此步将成功)
 RUN useradd \
   --groups=sudo,lp,lpadmin \
   --create-home \
