@@ -28,13 +28,7 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ secrets.DOCKERHUB_USERNAME }}/mzcupsd
-          # --- 修正开始 ---
-          # 移除标签定义中的注释
-          tags: |
-            type=ref,event=branch
-            type=ref,event=tag
-            type=sha,format=short
-          # --- 修正结束 ---
+       
 
       - name: Build and push
         uses: docker/build-push-action@v5
