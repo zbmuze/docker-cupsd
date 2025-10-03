@@ -1,44 +1,24 @@
-FROM debian:bookworm-slim
-LABEL maintainer="Joe Block <jpb@unixorn.net>"
-LABEL description="Cupsd on debian-slim, support Epson L210 (Gutenprint) + L360 (Official)"
-
-# 安装核心依赖、Gutenprint 驱动 (L210) 和工具
+# 仅安装 L210 必需组件：CUPS 核心 + Gutenprint 驱动 + 基础工具
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
-    # CUPS 核心服务组件
+    # CUPS 核心服务（打印基础依赖，不可移除）
     cups \
     cups-bsd \
     cups-client \
     cups-filters \
-    # 打印基础依赖
-    foomatic-db \
-    gsfonts \
-    openprinting-ppds \
-    # L210 Gutenprint 驱动
+    # L210 专用驱动（Gutenprint v5.3.3 依赖包）
     printer-driver-gutenprint \
-    # 系统工具依赖
+    # 打印配置基础文件（PPD 描述库，Gutenprint 依赖）
+    openprinting-ppds \
+    # 字体支持（避免打印中文/特殊字符乱码）
+    gsfonts \
+    # 用户管理工具（创建 print 用户必需）
     sudo \
     whois \
-    # 用于下载 .deb 包
-    wget \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/* /tmp/*
 
-# --- 手动安装 L360 官方驱动开始 (使用你提供的链接) ---
-# 1. 使用 wget 下载你提供的官方驱动包
-RUN wget -O /tmp/epson-l360-driver.deb \
-    "https://eposs.epson.com.cn/EPSON/assets/resource/Download/Service/driver/Inkjet/L130/sign_epson-inkjet-printer-201401w_1_0_0_amd64.deb"
-
-# 2. 使用 dpkg -i 手动安装下载的 .deb 包
-RUN dpkg -i /tmp/epson-l360-driver.deb \
-    # 3. 修复可能因手动安装导致的依赖问题
-    && apt-get -f install -y \
-    # 4. 清理下载的 .deb 文件，减小镜像体积
-    && rm -f /tmp/epson-l360-driver.deb
-
-# --- 手动安装 L360 官方驱动结束 ---
-
-# 创建打印用户并配置 sudo 免密
+# 创建打印用户并配置 sudo 免密（原逻辑保留，确保权限正常）
 RUN useradd \
   --groups=sudo,lp,lpadmin \
   --create-home \
@@ -48,19 +28,19 @@ RUN useradd \
   print \
 && sed -i '/%sudo[[:space:]]/ s/ALL[[:space:]]*$/NOPASSWD:ALL/' /etc/sudoers
 
-# 修复 CUPS 远程访问 Bad Request 错误
+# 修复 CUPS 远程访问 Bad Request 错误（确保局域网可访问管理界面）
 RUN cp /etc/cups/cupsd.conf /etc/cups/fixit && \
   sed 's/Port 631/Port 631\nServerAlias \*/' < /etc/cups/fixit > /etc/cups/cupsd.conf && \
   rm -f /etc/cups/fixit
 
-# 配置 CUPS 允许远程管理和共享
+# 配置 CUPS 允许远程管理和打印机共享（L210 局域网使用必需）
 RUN /usr/sbin/cupsd \
   && while [ ! -f /var/run/cups/cupsd.pid ]; do sleep 1; done \
   && cupsctl --remote-admin --remote-any --share-printers \
   && kill $(cat /var/run/cups/cupsd.pid)
 
-# 优化 CUPS 加密配置
+# 优化 CUPS 加密配置（避免低版本客户端连接失败）
 RUN sed -e '0,/^</s//DefaultEncryption IfRequested\n&/' -i /etc/cups/cupsd.conf
 
-# 启动 CUPS 服务
+# 前台启动 CUPS 服务（确保容器不退出）
 CMD ["/usr/sbin/cupsd", "-f"]
