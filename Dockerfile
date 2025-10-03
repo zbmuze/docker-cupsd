@@ -1,8 +1,8 @@
 # 使用最新的 Debian 稳定版 slim 镜像作为基础
 FROM debian:bookworm-slim
 
-LABEL maintainer="Your Name"
-LABEL description="CUPS + Gutenprint for Epson L210 (Printing) + SANE-airscan (Scanning)"
+LABEL maintainer="muze"
+LABEL description="CUPS + Gutenprint for Epson L210/L360 (Printing) + SANE-airscan (Scanning)"
 
 # 设置环境变量以避免交互式配置
 ENV DEBIAN_FRONTEND=noninteractive
@@ -32,6 +32,10 @@ RUN mkdir -p /etc/sane.d/dll.d
 RUN echo "airscan" > /etc/sane.d/dll.d/airscan.conf
 RUN echo "localhost" > /etc/sane.d/saned.conf && \
     echo "192.168.0.0/16" >> /etc/sane.d/saned.conf
+
+# --- 核心修改：为 Epson L360 添加 sane 驱动配置 ---
+# 这行命令会创建一个文件，告诉 SANE 去加载 epson2 驱动模块
+RUN echo "epson2" > /etc/sane.d/dll.d/epson2.conf
 
 # 创建用户并加入 lpadmin 和 scanner 组
 RUN useradd -m -s /bin/bash -G lpadmin,scanner print \
