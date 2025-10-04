@@ -34,7 +34,7 @@ jobs:
             type=semver,pattern={{version}}  # 如 v1.2.3
             type=semver,pattern={{major}}.{{minor}}  # 如 v1.2
             type=semver,pattern={{major}}  # 如 v1
-            type=sha,format=short  # 如 sha-abc123（分支推送时生成，保障唯一性）
+            type=raw,value=build-${{ github.run_number }}-${{ github.run_attempt }}
           # latest 标签逻辑不变
           flavor: |
             latest=true
