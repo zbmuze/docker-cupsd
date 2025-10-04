@@ -29,19 +29,13 @@ jobs:
         with:
           images: ${{ secrets.DOCKERHUB_USERNAME }}/mzcupsd
           
-          # --- 核心修改 1: 简化 tags 列表 ---
-          # 移除 type=raw,value=latest,enable={{is_tag}}
+          # 已删除 type=ref,event=branch，仅保留语义化标签和SHA标签
           tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=ref,event=branch
-            type=sha,format=short
-            type=raw,value=build-${{ github.run_number }}-${{ github.run_attempt }}
-          # --- 核心修改 2: 使用 flavor 配置来管理 latest 标签 ---
-          # latest=true: 允许生成 latest 标签
-          # onlatest=true: 只有当 Git 标签是最新的语义化版本时，才将其标记为 latest
-          #                这完美实现了我们的需求
+            type=semver,pattern={{version}}  # 如 v1.2.3
+            type=semver,pattern={{major}}.{{minor}}  # 如 v1.2
+            type=semver,pattern={{major}}  # 如 v1
+            type=sha,format=short  # 如 sha-abc123（分支推送时生成，保障唯一性）
+          # latest 标签逻辑不变
           flavor: |
             latest=true
             onlatest=true
