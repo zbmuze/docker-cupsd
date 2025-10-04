@@ -9,10 +9,18 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
     # CUPS 核心服务和基础组件
     cups \
+    cups-bsd \
+    cups-client \
     cups-filters \
     # L210 专用驱动
     printer-driver-gutenprint \
+    # 基础字体支持
+    gsfonts \
     # PPD 文件数据库，Gutenprint 依赖它来识别打印机型号
+    openprinting-ppds \
+    # 创建用户和配置 sudo 所需的工具
+    sudo \
+    whois \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/* /tmp/*
 
