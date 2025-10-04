@@ -1,30 +1,22 @@
 FROM debian:bookworm-slim
 LABEL maintainer="muze <zhmuze@gmail.com>"
-LABEL description="Cupsd on debian-slim, only for Epson L210/L360 (Gutenprint)"
+LABEL description="Minimal CUPS server for Epson L210/L360 (Gutenprint)"
+
 # 设置环境变量以避免交互式配置
 ENV DEBIAN_FRONTEND=noninteractive
 
-# --- 核心修改：仅安装 L210 必需的软件包 ---
-# 移除了所有其他品牌的驱动和非必需工具
+# --- 核心修改：仅安装最核心的软件包 ---
+# 移除了客户端工具、sudo、whois 和通用字体
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    # CUPS 核心服务和基础组件
+    # CUPS 核心服务
     cups \
-    cups-bsd \
-    cups-client \
     cups-filters \
     # L210 专用驱动
     printer-driver-gutenprint \
-    # 基础字体支持
-    gsfonts \
-    # PPD 文件数据库，Gutenprint 依赖它来识别打印机型号
-    openprinting-ppds \
-    # 创建用户和配置 sudo 所需的工具
-    sudo \
-    whois \
   && apt-get clean \
-  && rm -rf /var/lib/apt/lists/* /tmp/*
+  && rm -rf /var/lib/apt/lists/* /tmp/* /var/log/*
 
-# 创建一个名为 'print' 的用户，并加入 lpadmin 组以管理打印机
+# 创建 'print' 用户并加入 lpadmin 组，无需 sudo
 RUN useradd -m -s /bin/bash -G lpadmin print \
     && echo "print:print" | chpasswd
 
@@ -32,11 +24,10 @@ RUN useradd -m -s /bin/bash -G lpadmin print \
 RUN sed -i 's/Listen localhost:631/Listen 0.0.0.0:631/' /etc/cups/cupsd.conf \
     && sed -i '/<Location \/>/a \  Allow All' /etc/cups/cupsd.conf \
     && sed -i '/<Location \/admin>/a \  Allow All' /etc/cups/cupsd.conf \
-    && sed -i '/<Location \/admin\/conf>/a \  Allow All' /etc/cups/cupsd.conf \
-    && echo "ServerAlias *" >> /etc/cups/cupsd.conf
+    && sed -i '/<Location \/admin\/conf>/a \  Allow All' /etc/cups/cupsd.conf
 
 # 暴露 CUPS 的标准端口
 EXPOSE 631
 
-# 启动脚本，确保 CUPS 在前台运行
-CMD ["/usr/sbin/cupsd", "-f"]
+# 使用 exec 启动 CUPS 在前台运行，以便正确处理信号
+CMD ["sh", "-c", "exec /usr/sbin/cupsd -f"]
