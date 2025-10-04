@@ -37,10 +37,10 @@ jobs:
             type=semver,pattern={{major}}
             type=ref,event=branch
             type=sha,format=short
-          
+            type=raw,value=build-${{ github.run_number }}-${{ github.run_attempt }}
           # --- 核心修改 2: 使用 flavor 配置来管理 latest 标签 ---
-          # latest=true: 允许生成 latest 标签
-          # onlatest=true: 只有当 Git 标签是最新的语义化版本时，才将其标记为 latest
+            latest=true: 允许生成 latest 标签
+            onlatest=true: 只有当 Git 标签是最新的语义化版本时，才将其标记为 latest
           #                这完美实现了我们的需求
           flavor: |
             latest=true
