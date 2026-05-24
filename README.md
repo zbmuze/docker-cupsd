@@ -15,21 +15,37 @@
 
 Based on debian:bullseye-slim. Includes [cupsd](https://cups.org) along with every printer driver I could think of.
 
+This image also ships Epson ESC/P-R support, which covers Epson inkjet models such as the L360.
+
 Admin user & passwords default to **print** / **print**
+
+## Build numbering
+
+The repository supports automatic build numbering for Docker images. Running `rake build` will tag the built image as:
+
+- `unixorn/cupsd:latest`
+- `unixorn/cupsd:bookworm-slim`
+- `unixorn/cupsd:build-<number>`
+
+The `<number>` tag is derived from the Git commit count, and can also be overridden with `BUILD_NUMBER` in CI.
 
 ## Run the server
 
 Start `cupsd` with:
 
 ```sh
+cp printers.conf.example printers.conf
 sudo docker run -d --restart unless-stopped \
   -p 631:631 \
   --privileged \
+  -e CUPS_SERVER_NAME=cups.example.com \
   -v /var/run/dbus:/var/run/dbus \
   -v /dev/bus/usb:/dev/bus/usb \
   -v $(pwd)/printers.conf:/etc/cups/printers.conf \
   unixorn/cupsd
 ```
+
+If you access CUPS through a route or proxy, set `CUPS_SERVER_NAME` to the external host name so redirects stay on the public address instead of the container’s internal IP.
 
 or use `docker-compose up` with the following `docker-compose.yaml`:
 
@@ -53,6 +69,14 @@ services:
 ```
 
 Mounting `printers.conf` into the container keeps you from losing your printer configuration when you upgrade the container later.
+
+> Important: create a local `printers.conf` file before first starting the container:
+> `cp printers.conf.example printers.conf`
+> Otherwise Docker may create an empty bind mount and CUPS will not preserve your printer definitions.
+>
+> Note: `printers.conf` alone is not always enough. When you add a printer through the CUPS web UI, CUPS also creates a PPD file under `/etc/cups/ppd`. To keep printers after a container restart, persist both `printers.conf` and `/etc/cups/ppd`.
+>
+> For USB printers, the queue definitions are stored in `printers.conf`, but the physical device must still be available to CUPS after power-cycling. If the printer disappears after reboot, confirm the host USB device is still attached and that `/dev/bus/usb` is mounted into the container.
 
 ## Add printers to server
 

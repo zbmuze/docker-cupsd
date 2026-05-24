@@ -28,6 +28,7 @@ RUN apt-get update \
   printer-driver-cups-pdf \
   printer-driver-dymo \
   printer-driver-escpr \
+  # Epson ESC/P-R driver includes support for models such as L360
   printer-driver-foo2zjs \
   printer-driver-fujixerox \
   printer-driver-gutenprint \
@@ -74,5 +75,9 @@ RUN /usr/sbin/cupsd \
 # Patch the default configuration file to only enable encryption if requested
 RUN sed -e '0,/^</s//DefaultEncryption IfRequested\n&/' -i /etc/cups/cupsd.conf
 
-# Default shell
+# Use an entrypoint that can set ServerName from runtime environment.
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["/usr/sbin/cupsd", "-f"]

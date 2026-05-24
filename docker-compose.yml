@@ -2,8 +2,15 @@ version: '3.9'
 services:
   cupsd:
     image: unixorn/cupsd
+    environment:
+      # Set this to the external hostname used by your route/proxy:
+      # CUPS_SERVER_NAME=cups.example.com
+      - CUPS_SERVER_NAME=
     volumes:
+      # Create a local printers.conf before first run:
+      # cp printers.conf.example printers.conf
       - './printers.conf:/etc/cups/printers.conf'
+      - './ppd:/etc/cups/ppd'
       - '/dev/bus/usb:/dev/bus/usb'
       - '/var/run/dbus:/var/run/dbus'
       - /etc/hostname:/etc/hostname:ro
