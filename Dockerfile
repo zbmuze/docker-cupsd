@@ -1,83 +1,33 @@
 FROM debian:bookworm-slim
-LABEL maintainer="Joe Block <jpb@unixorn.net>"
-LABEL description="Cupsd on top of debian-slim"
+LABEL maintainer="muze <zhmuze@gmail.com>"
+LABEL description="Cupsd on debian-slim, only for Epson L210/L360 (Gutenprint)"
+# 设置环境变量以避免交互式配置
+ENV DEBIAN_FRONTEND=noninteractive
 
-# Install Packages (basic tools, cups, fonts, HP drivers, laundry list drivers)
-RUN apt-get update \
-&& apt-get install -y --no-install-recommends apt-utils ca-certificates \
-&& update-ca-certificates \
-&& apt autoremove -y \
-&& apt-get install -y \
-  cups \
-  cups-bsd \
-  cups-client \
-  cups-filters \
-  foomatic-db \
-  gsfonts \
-  gutenprint-locales \
-  hp-ppd \
-  hpijs-ppds \
-  hplip \
-  magicfilter \
-  openprinting-ppds \
-  printer-driver-all \
-  printer-driver-brlaser \
-  printer-driver-c2050 \
-  printer-driver-c2esp \
-  printer-driver-cjet \
-  printer-driver-cups-pdf \
-  printer-driver-dymo \
-  printer-driver-escpr \
-  # Epson ESC/P-R driver includes support for models such as L360
-  printer-driver-foo2zjs \
-  printer-driver-fujixerox \
-  printer-driver-gutenprint \
-  printer-driver-hpcups \
-  printer-driver-hpijs \
-  printer-driver-m2300w \
-  printer-driver-min12xxw \
-  printer-driver-pnm2ppa \
-  printer-driver-postscript-hp \
-  printer-driver-ptouch \
-  printer-driver-pxljr \
-  printer-driver-sag-gdi \
-  printer-driver-splix \
-&& apt-get install -y --no-install-recommends \
-  binutils \
-  psutils \
-  smbclient \
-  sudo \
-  whois \
-&& apt-get clean \
-&& rm -rf /var/lib/apt/lists/* /tmp/*
+# --- 核心修改：仅安装 L210 必需的软件包 ---
+# 移除了所有其他品牌的驱动和非必需工具
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # CUPS 核心服务和基础组件
+    cups \
+    cups-filters \
+    # L210 专用驱动
+    printer-driver-gutenprint \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/* /tmp/*
 
-# Add user and disable sudo password checking
-RUN useradd \
-  --groups=sudo,lp,lpadmin \
-  --create-home \
-  --home-dir=/home/print \
-  --shell=/bin/bash \
-  --password=$(mkpasswd print) \
-  print \
-&& sed -i '/%sudo[[:space:]]/ s/ALL[[:space:]]*$/NOPASSWD:ALL/' /etc/sudoers
+# 创建一个名为 'print' 的用户，并加入 lpadmin 组以管理打印机
+RUN useradd -m -s /bin/bash -G lpadmin print \
+    && echo "print:print" | chpasswd
 
-# Fix Bad Request error by adding ServerAlias * to cupsd.conf
-RUN cp /etc/cups/cupsd.conf /etc/cups/fixit && \
-  sed 's/Port 631/Port 631\nServerAlias \*/' < /etc/cups/fixit > /etc/cups/cupsd.conf && \
-  rm -f /etc/cups/fixit
+# 配置 CUPS 允许远程访问和管理
+RUN sed -i 's/Listen localhost:631/Listen 0.0.0.0:631/' /etc/cups/cupsd.conf \
+    && sed -i '/<Location \/>/a \  Allow All' /etc/cups/cupsd.conf \
+    && sed -i '/<Location \/admin>/a \  Allow All' /etc/cups/cupsd.conf \
+    && sed -i '/<Location \/admin\/conf>/a \  Allow All' /etc/cups/cupsd.conf \
+    && echo "ServerAlias *" >> /etc/cups/cupsd.conf
 
-# Configure the services to be reachable
-RUN /usr/sbin/cupsd \
-  && while [ ! -f /var/run/cups/cupsd.pid ]; do sleep 1; done \
-  && cupsctl --remote-admin --remote-any --share-printers \
-  && kill $(cat /var/run/cups/cupsd.pid)
+# 暴露 CUPS 的标准端口
+EXPOSE 631
 
-# Patch the default configuration file to only enable encryption if requested
-RUN sed -e '0,/^</s//DefaultEncryption IfRequested\n&/' -i /etc/cups/cupsd.conf
-
-# Use an entrypoint that can set ServerName from runtime environment.
-COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
-
-ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+# 启动脚本，确保 CUPS 在前台运行
 CMD ["/usr/sbin/cupsd", "-f"]
