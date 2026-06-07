@@ -1,37 +1,37 @@
  # docker-cupsd
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-## Table of Contents
+## 目录
 
-- [Run the server](#run-the-server)
-- [Add printers to server](#add-printers-to-server)
-- [Add the printer to your Mac](#add-the-printer-to-your-mac)
-- [Use with Home Assistant](#use-with-home-assistant)
+- [运行服务](#运行服务)
+- [向服务器添加打印机](#向服务器添加打印机)
+- [在 Mac 上添加打印机](#在-mac-上添加打印机)
+- [与 Home Assistant 一起使用](#与-home-assistant-一起使用)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 
-`cupsd` in a docker container.
+`cupsd` 的 Docker 容器。
 
-Based on debian:bullseye-slim. Includes [cupsd](https://cups.org) along with every printer driver I could think of.
+基于 debian:bullseye-slim。包含 [cupsd](https://cups.org) 以及我能想到的所有打印机驱动。
 
-This image also ships Epson ESC/P-R support, which covers Epson inkjet models such as the L360.
+该镜像还自带 Epson ESC/P-R 支持，可覆盖像 L360 这样的 Epson 喷墨机型。
 
-Admin user & passwords default to **print** / **print**
+管理员用户名和密码默认是 **print** / **print**
 
-## Build numbering
+## 构建编号
 
-The repository supports automatic build numbering for Docker images. Running `rake build` will tag the built image as:
+该仓库支持 Docker 镜像的自动构建编号。运行 `rake build` 会为构建好的镜像打上以下标签：
 
 - `unixorn/cupsd:latest`
 - `unixorn/cupsd:bookworm-slim`
 - `unixorn/cupsd:build-<number>`
 
-The `<number>` tag is derived from the Git commit count, and can also be overridden with `BUILD_NUMBER` in CI.
+`<number>` 标签来源于 Git 提交计数，并且可以在 CI 中通过 `BUILD_NUMBER` 覆盖。
 
-## Run the server
+## 运行服务
 
-Start `cupsd` with:
+使用以下命令启动 `cupsd`：
 
 ```sh
 cp printers.conf.example printers.conf
@@ -46,9 +46,9 @@ sudo docker run -d --restart unless-stopped \
   unixorn/cupsd
 ```
 
-If you access CUPS through a route or proxy, set `CUPS_SERVER_NAME` to the external host name so redirects stay on the public address instead of the container’s internal IP.
+如果你通过路由或代理访问 CUPS，请将 `CUPS_SERVER_NAME` 设置为外部主机名，这样重定向地址会保持为公共地址，而不是容器内部 IP。
 
-or use `docker-compose up` with the following `docker-compose.yaml`:
+或者使用以下 `docker-compose.yaml` 和 `docker-compose up`：
 
 ```yaml
 version: '3.9'
@@ -70,30 +70,31 @@ services:
     restart: unless-stopped
 ```
 
-Mounting `printers.conf` into the container keeps you from losing your printer configuration when you upgrade the container later.
+将 `printers.conf` 挂载到容器中可以避免在以后升级容器时丢失打印机配置。
 
-> Important: create a local `printers.conf` file and a local `ppd` directory before first starting the container:
+> 重要：在首次启动容器之前，先创建本地 `printers.conf` 文件和本地 `ppd` 目录：
 > `cp printers.conf.example printers.conf`
 > `mkdir -p ppd`
-> Otherwise Docker may create empty bind mounts and CUPS will not preserve your printer definitions.
+> 否则 Docker 可能会创建空的绑定挂载，而 CUPS 无法保留你的打印机定义。
 >
-> Note: `printers.conf` alone is not always enough. When you add a printer through the CUPS web UI, CUPS also creates a PPD file under `/etc/cups/ppd`. To keep printers after a container restart, persist both `printers.conf` and `/etc/cups/ppd`.
+> 注意：单独持久化 `printers.conf` 并不总是足够。当你通过 CUPS Web UI 添加打印机时，CUPS 还会在 `/etc/cups/ppd` 下创建一个 PPD 文件。要在容器重启后保留打印机，请同时持久化 `printers.conf` 和 `/etc/cups/ppd`。
 >
-> For USB printers, the queue definitions are stored in `printers.conf`, but the physical device must still be available to CUPS after power-cycling. If the printer disappears after reboot, confirm the host USB device is still attached and that `/dev/bus/usb` is mounted into the container.
+> 对于 USB 打印机，队列定义存储在 `printers.conf` 中，但物理设备在断电后仍必须对 CUPS 可用。如果打印机在重启后消失，请确认宿主机上的 USB 设备仍已连接，并且 `/dev/bus/usb` 已挂载到容器中。
 
-## Add printers to server
+## 向服务器添加打印机
 
-1. Connect to `http://cupsd-hostname:631`
-2. **Adminstration** -> **Printers** -> **Add Printer**
+1. 访问 `http://cupsd-hostname:631`
+2. **Administration** -> **Printers** -> **Add Printer**
 
-## Add the printer to your Mac
+## 在 Mac 上添加打印机
 
 1. **System Preferences** -> **Printers**
-2. Click on the **+**
-3. Click the center sphere icon
-4. Put the IP (or better, DNS name) of your server in the Address field
-5. Select `Internet Printing Protocol` in the Protocol dropdown
-6. Put `printers/YOURPRINTERNAME` in the queue field.
+2. 点击 **+**
+3. 点击中间的球形图标
+4. 在 Address 字段输入服务器的 IP（或更好是 DNS 名称）
+5. 在 Protocol 下拉菜单中选择 `Internet Printing Protocol`
+6. 在队列字段中输入 `printers/YOURPRINTERNAME`。
 
-## Use with [Home Assistant](https://www.home-assistant.io/)
-I blogged how I use this with Home Assistant to automagically turn on my HP 4050N printer when there are print jobs and turn it back off when the jobs are complete [here](https://unixorn.github.io/post/home-assistant-printer-power-management/), but it'll work with any printer.
+## 与 [Home Assistant](https://www.home-assistant.io/) 一起使用
+
+我写了一篇博客，介绍如何将此镜像与 Home Assistant 一起使用，以便在有打印任务时自动开启我的 HP 4050N 打印机，并在任务完成后关闭它，[详见此处](https://unixorn.github.io/post/home-assistant-printer-power-management/)。不过它适用于任何打印机。
