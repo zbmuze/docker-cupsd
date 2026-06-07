@@ -23,9 +23,9 @@
 
 该仓库支持 Docker 镜像的自动构建编号。运行 `rake build` 会为构建好的镜像打上以下标签：
 
-- `unixorn/cupsd:latest`
-- `unixorn/cupsd:bookworm-slim`
-- `unixorn/cupsd:build-<number>`
+- `muze862/mzcupsd:latest`
+- `muze862/mzcupsd:bookworm-slim`
+- `muze862/mzcupsd:build-<number>`
 
 `<number>` 标签来源于 Git 提交计数，并且可以在 CI 中通过 `BUILD_NUMBER` 覆盖。
 
@@ -43,7 +43,7 @@ sudo docker run -d --restart unless-stopped \
   -v /dev/bus/usb:/dev/bus/usb \
   -v $(pwd)/printers.conf:/etc/cups/printers.conf \
   -v $(pwd)/ppd:/etc/cups/ppd \
-  unixorn/cupsd
+  muze862/mzcupsd
 ```
 
 如果你通过路由或代理访问 CUPS，请将 `CUPS_SERVER_NAME` 设置为外部主机名，这样重定向地址会保持为公共地址，而不是容器内部 IP。
@@ -54,7 +54,7 @@ sudo docker run -d --restart unless-stopped \
 version: '3.9'
 services:
   cupsd:
-    image: unixorn/cupsd
+    image: muze862/mzcupsd
     volumes:
       - './printers.conf:/etc/cups/printers.conf'
       - './ppd:/etc/cups/ppd'

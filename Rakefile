@@ -4,7 +4,7 @@ task :b => [:multiarch_build]
 task :build => [:multiarch_build]
 task :buildx => [:multiarch_build]
 
-CONTAINER_NAME = 'unixorn/cupsd'
+CONTAINER_NAME = 'muze862/mzcupsd'
 BASELINE = 'bookworm-slim'
 BUILD_NUMBER = ENV['BUILD_NUMBER'] || `git rev-list --count HEAD 2>/dev/null`.strip
 BUILD_NUMBER = Time.now.utc.strftime('%Y%m%d%H%M%S') if BUILD_NUMBER.empty?
