@@ -1,4 +1,4 @@
-# docker-cupsd
+ # docker-cupsd
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 ## Table of Contents
@@ -42,6 +42,7 @@ sudo docker run -d --restart unless-stopped \
   -v /var/run/dbus:/var/run/dbus \
   -v /dev/bus/usb:/dev/bus/usb \
   -v $(pwd)/printers.conf:/etc/cups/printers.conf \
+  -v $(pwd)/ppd:/etc/cups/ppd \
   unixorn/cupsd
 ```
 
@@ -56,6 +57,7 @@ services:
     image: unixorn/cupsd
     volumes:
       - './printers.conf:/etc/cups/printers.conf'
+      - './ppd:/etc/cups/ppd'
       - '/dev/bus/usb:/dev/bus/usb'
       - '/var/run/dbus:/var/run/dbus'
       - /etc/hostname:/etc/hostname:ro
@@ -70,9 +72,10 @@ services:
 
 Mounting `printers.conf` into the container keeps you from losing your printer configuration when you upgrade the container later.
 
-> Important: create a local `printers.conf` file before first starting the container:
+> Important: create a local `printers.conf` file and a local `ppd` directory before first starting the container:
 > `cp printers.conf.example printers.conf`
-> Otherwise Docker may create an empty bind mount and CUPS will not preserve your printer definitions.
+> `mkdir -p ppd`
+> Otherwise Docker may create empty bind mounts and CUPS will not preserve your printer definitions.
 >
 > Note: `printers.conf` alone is not always enough. When you add a printer through the CUPS web UI, CUPS also creates a PPD file under `/etc/cups/ppd`. To keep printers after a container restart, persist both `printers.conf` and `/etc/cups/ppd`.
 >
