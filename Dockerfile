@@ -21,7 +21,6 @@ RUN useradd -m -s /bin/bash -G lpadmin print \
 
 # 配置 CUPS 允许远程访问和管理
 RUN sed -i 's/Listen localhost:631/Listen 0.0.0.0:631/' /etc/cups/cupsd.conf \
-    && sed -i 's/DefaultEncryption.*/DefaultEncryption Never/' /etc/cups/cupsd.conf \
     && sed -i '/<Location \/>/a \  Allow All' /etc/cups/cupsd.conf \
     && sed -i '/<Location \/admin>/a \  Allow All' /etc/cups/cupsd.conf \
     && sed -i '/<Location \/admin\/conf>/a \  Allow All' /etc/cups/cupsd.conf \
