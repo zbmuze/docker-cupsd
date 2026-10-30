@@ -9,7 +9,9 @@ docker run -d \
 --name mzcupsd \
 muze862/mzcupsd:latest
 ```
-镜像不创建默认登录账号。需要通过网页管理 CUPS 时，请自行创建一个加入 `lpadmin` 组的系统用户并设置密码。
+登录 CUPS 后台的账号密码：
+账号：print
+密码：print
 
 ## Epson 驱动与通用 IPP/RAW
 
