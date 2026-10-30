@@ -12,6 +12,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/* /tmp/*
 
+
+RUN useradd -m -s /bin/bash -G lpadmin print \
+    && echo "print:print" | chpasswd
+
 # 复制你配置好的 cupsd.conf 进镜像
 COPY cupsd.conf /etc/cups/cupsd.conf
 
