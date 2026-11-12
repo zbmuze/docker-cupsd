@@ -8,7 +8,6 @@ docker run -d \
 -v /var/run/dbus:/var/run/dbus \
 --name mzcupsd \
 muze862/mzcupsd:latest
-```62/mzcupsd:latest
 ```
 登录 CUPS 后台的账号密码：
 账号：print
