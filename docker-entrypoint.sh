@@ -3,6 +3,14 @@ set -e
 
 mkdir -p /var/run/dbus /run/dbus
 
+# ========== 新增：创建admin账号、设置密码，加入lpadmin ==========
+if ! id -u admin >/dev/null 2>&1; then
+    useradd -M -G lpadmin admin
+fi
+# 账号 admin，密码 admin；改密码就把后面的admin替换掉
+echo "admin:admin" | chpasswd
+# ==============================================================
+
 if ! pgrep -x dbus-daemon >/dev/null 2>&1; then
   dbus-daemon --system --fork >/dev/null 2>&1 || true
 fi
