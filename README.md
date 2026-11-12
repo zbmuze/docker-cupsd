@@ -2,16 +2,23 @@
 
 ```bash
 docker run -d \
--p 631:631 \
+--network host \
 --privileged=true \
 -v /dev/bus/usb:/dev/bus/usb \
 -v /var/run/dbus:/var/run/dbus \
 --name mzcupsd \
 muze862/mzcupsd:latest
+```62/mzcupsd:latest
 ```
 登录 CUPS 后台的账号密码：
 账号：print
 密码：print
+
+如果想让打印机在局域网中被 Bonjour / Avahi 发现，建议使用 `--network host` 或者带有本地广播能力的网络模式；仅用桥接网络时，mDNS 广播可能不能被局域网设备正确发现。
+
+鸿蒙设备通常会通过 mDNS / DNS-SD 发现 `_ipp._tcp` 服务；本镜像已按该标准公布 CUPS 服务，因此在同一局域网中，HarmonyOS 可尝试搜索“IPP”或直接访问 `ipp://<容器宿主机IP>:631/ipp/print`。
+
+镜像不创建默认登录账号。需要通过网页管理 CUPS 时，请自行创建一个加入 `lpadmin` 组的系统用户并设置密码。
 
 ## Epson 驱动与通用 IPP/RAW
 
