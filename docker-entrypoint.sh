@@ -3,13 +3,30 @@ set -e
 
 mkdir -p /var/run/dbus /run/dbus
 
-# ========== 新增：创建admin账号、设置密码，加入lpadmin ==========
-if ! id -u admin >/dev/null 2>&1; then
-    useradd -M -G lpadmin admin
+if [ -n "${CUPS_ADMIN_PASSWORD_FILE:-}" ] || [ "${CUPS_ADMIN_PASSWORD+x}" = x ]; then
+  if [ -n "${CUPS_ADMIN_PASSWORD_FILE:-}" ]; then
+    if [ ! -r "$CUPS_ADMIN_PASSWORD_FILE" ]; then
+      echo "CUPS_ADMIN_PASSWORD_FILE is not readable: $CUPS_ADMIN_PASSWORD_FILE" >&2
+      exit 1
+    fi
+    admin_password=$(cat "$CUPS_ADMIN_PASSWORD_FILE")
+  else
+    admin_password=$CUPS_ADMIN_PASSWORD
+  fi
+
+  if [ -z "$admin_password" ]; then
+    echo "CUPS admin password must not be empty" >&2
+    exit 1
+  fi
+
+  if id -u print >/dev/null 2>&1; then
+    usermod -aG lpadmin print
+  else
+    useradd -m -s /bin/sh -G lpadmin print
+  fi
+  printf 'print:%s\n' "$admin_password" | chpasswd
+  unset admin_password CUPS_ADMIN_PASSWORD
 fi
-# 账号 admin，密码 admin；改密码就把后面的admin替换掉
-echo "admin:admin" | chpasswd
-# ==============================================================
 
 if ! pgrep -x dbus-daemon >/dev/null 2>&1; then
   dbus-daemon --system --fork >/dev/null 2>&1 || true

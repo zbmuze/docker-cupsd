@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     dbus \
     cups \
     cups-filters \
+    passwd \
     printer-driver-escpr \
     printer-driver-gutenprint \
   && mkdir -p /var/run/dbus /run/dbus \
@@ -19,7 +20,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # 复制你配置好的 cupsd.conf 进镜像
 COPY cupsd.conf /etc/cups/cupsd.conf
 COPY avahi-daemon.conf /etc/avahi/avahi-daemon.conf
-COPY avahi-cups-ipp.service /etc/avahi/services/cups-ipp.service
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
