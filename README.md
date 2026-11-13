@@ -10,8 +10,8 @@ docker run -d \
 muze862/mzcupsd:latest
 ```
 登录 CUPS 后台的账号密码：
-账号：print
-密码：print
+账号：admin
+密码：admin
 
 如果想让打印机在局域网中被 Bonjour / Avahi 发现，建议使用 `--network host` 或者带有本地广播能力的网络模式；仅用桥接网络时，mDNS 广播可能不能被局域网设备正确发现。
 
