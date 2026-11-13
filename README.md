@@ -9,6 +9,17 @@ docker run -d \
 --name mzcupsd \
 muze862/mzcupsd:latest
 ```
+
+
+```bash
+docker run -d \
+-p 631:631 \
+--privileged=true \
+-v /dev/bus/usb:/dev/bus/usb \
+-v /var/run/dbus:/var/run/dbus \
+--name mzcupsd \
+muze862/mzcupsd:latest
+```
 登录 CUPS 后台的账号密码：
 账号：admin
 密码：admin
